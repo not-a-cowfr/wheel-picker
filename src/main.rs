@@ -33,7 +33,7 @@ fn cli() -> Command {
 		.subcommand(
 			Command::new("pick")
 				.about("picks a random entry from the wheel")
-				.arg(arg!(-i - -instant "skip the animation, pick an entry instantly"))
+				.arg(arg!(-i --instant "skip the animation, pick an entry instantly"))
 				.arg(
 					arg!([AMOUNT] "the amount of entries to pick, default 1")
 						.value_parser(clap::value_parser!(usize)),

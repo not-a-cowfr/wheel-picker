@@ -36,26 +36,57 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@nightly
+
+      - name: Install UPX (linux)
+        if: matrix.platform.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y upx
+
+      # upx is currently unsupported on macos and i dont feel like risking the --force-macos flag
+      # - name: Install UPX (macos)
+      #   if: matrix.platform.os == 'macos-latest'
+      #   run: |
+      #     brew install upx
+
+      - name: Install UPX (windows)
+        if: matrix.platform.os == 'windows-latest'
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/upx/upx/releases/download/v5.0.2/upx-5.0.2-win64.zip" -OutFile "upx.zip"
+          Expand-Archive upx.zip -DestinationPath "C:\UPX"
+          echo "C:\UPX" | Out-File -Append -FilePath $env:GITHUB_PATH
 
       - name: Build
         uses: houseabsolute/actions-rust-cross@v0
         with:
           target: ${{ matrix.platform.target }}
-          toolchain: stable
+          toolchain: nightly
           command: build
           args: --locked --release
 
-      - name: Package
-        if: matrix.platform.os != 'windows-latest'
+      - name: Package (linux)
+        if: matrix.platform.os == 'ubuntu-latest'
         run: |
           mkdir -p dist
           bin_name="wheel-picker"
           cp target/${{ matrix.platform.target }}/release/${bin_name} dist/
           cd dist
+
+          upx --best --lzma ${bin_name}
           zip ../${{ matrix.platform.name }}.zip ${bin_name}
 
-      - name: Package (Windows)
+      - name: Package (macos)
+        if: matrix.platform.os == 'macos-latest'
+        run: |
+          mkdir -p dist
+          bin_name="wheel-picker"
+          cp target/${{ matrix.platform.target }}/release/${bin_name} dist/
+          cd dist
+
+          zip ../${{ matrix.platform.name }}.zip ${bin_name}
+
+      - name: Package (windows)
         if: matrix.platform.os == 'windows-latest'
         run: |
           mkdir dist
@@ -115,7 +146,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@nightly
 
       - name: Publish to crates.io
         run: cargo publish
