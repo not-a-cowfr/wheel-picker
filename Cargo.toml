@@ -1,0 +1,21 @@
+[package]
+name = "wheel-picker"
+version = "0.1.0"
+edition = "2024"
+
+[profile.release]
+opt-level = 3
+debug = false
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+incremental = true
+
+[dependencies]
+clap = "4.5.51"
+rand = "0.9.2"
+serde = { version = "1.0.228", features = ["derive"] }
+toml = "0.9.8"
+tracing = "0.1.41"
+tracing-subscriber = "0.3.20"
