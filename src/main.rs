@@ -5,7 +5,6 @@ use std::time::Duration;
 use clap::{Command, arg};
 use rand::Rng;
 use rand::seq::IndexedRandom;
-use tracing::Level;
 
 use crate::config::Config;
 
@@ -43,14 +42,6 @@ fn cli() -> Command {
 }
 
 fn main() {
-	#[cfg(debug_assertions)]
-	tracing_subscriber::fmt()
-		.with_max_level(Level::DEBUG)
-		.init();
-
-	#[cfg(not(debug_assertions))]
-	tracing_subscriber::fmt().with_max_level(Level::INFO).init();
-
 	let matches = cli().get_matches();
 
 	config::create_config();
