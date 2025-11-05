@@ -7,8 +7,7 @@ Simple cli tool to make and pick from a wheel.
 from source
 
 ```sh
-git clone https://github.com/not-a-cowfr/wheel-picker
-cargo install --path wheel-picker
+cargo install --git https://github.com/not-a-cowfr/wheel-picker
 ```
 
 from cargo
