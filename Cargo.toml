@@ -1,7 +1,15 @@
 [package]
 name = "wheel-picker"
+description = "Simple cli tool to make and randomly pick from a wheel."
+keywords = ["wheel", "random", "picker"]
+
 version = "0.1.0"
 edition = "2024"
+
+license = "MIT"
+readme = "./README.md"
+repository = "https://github.com/not-a-cowfr/wheel-picker"
+documentation = "https://docs.rs/wheel-picker"
 
 [profile.release]
 opt-level = 3

@@ -1,6 +1,6 @@
 # wheel-picker
 
-Simple cli tool to make and pick from a wheel.
+Simple cli tool to make and randomly pick from a wheel.
 
 ## Installing
 
