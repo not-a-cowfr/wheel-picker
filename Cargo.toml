@@ -23,5 +23,7 @@ incremental = true
 [dependencies]
 clap = "4.5.51"
 rand = "0.9.2"
-serde = { version = "1.0.228", features = ["derive"] }
-toml = "0.9.8"
+nanoserde = { version = "*", default-features = false, features = [
+	"std",
+	"ron",
+] }

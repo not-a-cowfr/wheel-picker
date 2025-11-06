@@ -52,11 +52,7 @@ fn main() {
 		| Some(("add", sub_matches)) => {
 			let entry = sub_matches.get_one::<String>("NAME").expect("required");
 
-			if config.current_pool.is_none() {
-				config.current_pool = Some(vec![]);
-			}
-
-			config.current_pool.as_mut().unwrap().push(entry.to_owned());
+			config.current_pool.push(entry.to_owned());
 
 			config.update();
 
@@ -68,32 +64,28 @@ fn main() {
 		| Some(("remove", sub_matches)) => {
 			let entry = sub_matches.get_one::<String>("NAME").expect("required");
 
-			if let Some(pool) = &mut config.current_pool {
-				if !pool.is_empty() {
-					if let Some(pos) = pool.iter().position(|e| e == entry) {
-						pool.remove(pos);
-						config.update();
+			if !config.current_pool.is_empty() {
+				if let Some(pos) = config.current_pool.iter().position(|e| e == entry) {
+					config.current_pool.remove(pos);
+					config.update();
 
-						println!(
-							"removed entry {} from wheel\n\nrun `wheel-picker list` to see all entries",
-							entry
-						);
-					} else {
-						println!("entry {} not found in wheel", entry);
-					}
-					return;
+					println!(
+						"removed entry {} from wheel\n\nrun `wheel-picker list` to see all entries",
+						entry
+					);
+				} else {
+					println!("entry {} not found in wheel", entry);
 				}
+				return;
 			}
-			println!("wheel has no entries")
+			println!("wheel has no entries\n\ntry adding some with `wheel-picker add <entry>`");
 		},
 		| Some(("list", _)) => {
-			if let Some(pool) = config.current_pool {
-				if !pool.is_empty() {
-					println!("current wheel pool:\n{}", pool.join("\n"));
-					return;
-				}
+			if !config.current_pool.is_empty() {
+				println!("current wheel pool:\n{}", config.current_pool.join("\n"));
+				return;
 			}
-			println!("wheel has no entries");
+			println!("wheel has no entries\n\ntry adding some with `wheel-picker add <entry>`");
 		},
 		| Some(("clear", _)) => {
 			print!("Are you sure? (y/N): ");
@@ -104,7 +96,7 @@ fn main() {
 
 			let input = input.trim().to_lowercase();
 			if input == "y" || input == "yes" {
-				config.current_pool = Some(vec![]);
+				config.current_pool = vec![];
 				config.update();
 
 				println!("cleared wheel");
@@ -116,44 +108,42 @@ fn main() {
 			let is_instant = sub_matches.get_one::<bool>("instant").unwrap_or(&false);
 			let amount = sub_matches.get_one::<usize>("AMOUNT").unwrap_or(&1);
 
-			if let Some(pool) = config.current_pool {
-				if !pool.is_empty() {
-					let mut rng = rand::rng();
+			if !config.current_pool.is_empty() {
+				let mut rng = rand::rng();
 
-					if *is_instant {
-						let mut picked: Vec<&str> = vec![];
-						for _ in 0..*amount {
-							picked.push(pool.choose(&mut rng).unwrap());
-						}
-
-						println!("picked entries: {}", picked.join(", "));
-
-						return;
-					} else {
-						let mut picked: Vec<&str> = vec![];
-
-						for i in 0..*amount {
-							println!("\nSpin {}:", i + 1);
-
-							let spin_time = rng.random_range(1..3);
-							let start = std::time::Instant::now();
-
-							let mut current = "";
-
-							while start.elapsed().as_secs_f32() < spin_time as f32 {
-								current = pool.choose(&mut rng).unwrap();
-								print!("\r\x1B[2KSpinning... [{}]", current);
-								std::io::Write::flush(&mut std::io::stdout()).unwrap();
-								thread::sleep(Duration::from_millis(rng.random_range(50..150)));
-							}
-
-							picked.push(current);
-							println!("\r\x1B[2Kpicked: {}", current);
-						}
-
-						println!("\npicked entries: {}", picked.join(", "));
-						return;
+				if *is_instant {
+					let mut picked: Vec<&str> = vec![];
+					for _ in 0..*amount {
+						picked.push(config.current_pool.choose(&mut rng).unwrap());
 					}
+
+					println!("picked entries: {}", picked.join(", "));
+
+					return;
+				} else {
+					let mut picked: Vec<&str> = vec![];
+
+					for i in 0..*amount {
+						println!("\nSpin {}:", i + 1);
+
+						let spin_time = rng.random_range(1..3);
+						let start = std::time::Instant::now();
+
+						let mut current = "";
+
+						while start.elapsed().as_secs_f32() < spin_time as f32 {
+							current = config.current_pool.choose(&mut rng).unwrap();
+							print!("\r\x1B[2KSpinning... [{}]", current);
+							std::io::Write::flush(&mut std::io::stdout()).unwrap();
+							thread::sleep(Duration::from_millis(rng.random_range(50..150)));
+						}
+
+						picked.push(current);
+						println!("\r\x1B[2Kpicked: {}", current);
+					}
+
+					println!("\npicked entries: {}", picked.join(", "));
+					return;
 				}
 			}
 			println!("wheel has no entries\n\ntry adding some with `wheel-picker add <entry>`");
