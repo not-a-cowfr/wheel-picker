@@ -154,9 +154,9 @@ jobs:
           version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
           echo "Checking if $crate_name v$version exists on crates.io..."
           if cargo search "^$crate_name$" --limit 1 | grep -q "$version"; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
             echo "exists=false" >> $GITHUB_OUTPUT
+          else
+            echo "exists=true" >> $GITHUB_OUTPUT
           fi
 
       - name: Publish to crates.io
