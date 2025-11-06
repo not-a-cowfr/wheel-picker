@@ -3,7 +3,7 @@ name = "wheel-picker"
 description = "Simple cli tool to make and randomly pick from a wheel."
 keywords = ["wheel", "random", "picker"]
 
-version = "1.0.0"
+version = "1.0.1"
 edition = "2024"
 
 license = "MIT"
