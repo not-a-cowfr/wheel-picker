@@ -11,6 +11,10 @@ readme = "./README.md"
 repository = "https://github.com/not-a-cowfr/wheel-picker"
 documentation = "https://docs.rs/wheel-picker"
 
+[profile.dev]
+opt-level = 0
+incremental = true
+
 [profile.release]
 opt-level = "z"
 debug = false
@@ -23,7 +27,4 @@ incremental = true
 [dependencies]
 fastrand = "2.3.0"
 lexopt = "0.3.1"
-nanoserde = { version = "0.2.1", default-features = false, features = [
-	"std",
-	"ron",
-] }
+nanoserde = { version = "0.2.1", default-features = false, features = ["ron"] }
