@@ -16,7 +16,10 @@ fn main() {
 	let cmd = match parser.next() {
 		| Ok(Some(Arg::Value(v))) => v.to_string_lossy().into_owned(),
 		| _ => {
-			eprintln!("usage: wheel <add|remove|list|clear|pick> [...]");
+			eprintln!(
+				"wheel-picker v{}\n\nusage: wheel <add|remove|list|clear|pick> [...]",
+				env!("CARGO_PKG_VERSION")
+			);
 			return;
 		},
 	};
