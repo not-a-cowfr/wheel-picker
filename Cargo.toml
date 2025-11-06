@@ -21,8 +21,8 @@ strip = true
 incremental = true
 
 [dependencies]
-clap = "4.5.51"
 fastrand = "2.3.0"
+lexopt = "0.3.1"
 nanoserde = { version = "*", default-features = false, features = [
 	"std",
 	"ron",

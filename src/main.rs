@@ -2,90 +2,69 @@ use std::io::{self, Write};
 use std::thread;
 use std::time::Duration;
 
-use clap::{Command, arg};
+use lexopt::{Arg, Parser};
 
 use crate::config::Config;
 
 mod config;
 
-fn cli() -> Command {
-	Command::new("wheel")
-		.about("Random wheel picker")
-		.subcommand_required(true)
-		.arg_required_else_help(true)
-		.allow_external_subcommands(true)
-		.subcommand(
-			Command::new("add")
-				.about("adds an entry to the wheel")
-				.arg(arg!(<NAME> "The name of the entry"))
-				.arg_required_else_help(true),
-		)
-		.subcommand(
-			Command::new("remove")
-				.about("removes an entry from the wheel")
-				.arg(arg!(<NAME> "The name of the entry"))
-				.arg_required_else_help(true),
-		)
-		.subcommand(Command::new("list").about("lists all entries currently in the wheel"))
-		.subcommand(Command::new("clear").about("clears all entries from the wheel"))
-		.subcommand(
-			Command::new("pick")
-				.about("picks a random entry from the wheel")
-				.arg(arg!(-i --instant "skip the animation, pick an entry instantly"))
-				.arg(
-					arg!([AMOUNT] "the amount of entries to pick, default 1")
-						.value_parser(clap::value_parser!(usize)),
-				),
-		)
-}
-
 fn main() {
-	let matches = cli().get_matches();
-
 	config::create_config();
-
 	let mut config = Config::get();
 
-	match matches.subcommand() {
-		| Some(("add", sub_matches)) => {
-			let entry = sub_matches.get_one::<String>("NAME").expect("required");
+	let mut parser = Parser::from_env();
+	let cmd = match parser.next() {
+		| Ok(Some(Arg::Value(v))) => v.to_string_lossy().into_owned(),
+		| _ => {
+			eprintln!("usage: wheel <add|remove|list|clear|pick> [...]");
+			return;
+		},
+	};
 
-			config.current_pool.push(entry.to_owned());
+	match cmd.as_str() {
+		| "add" => {
+			let name = match parser.next() {
+				| Ok(Some(Arg::Value(v))) => v.to_string_lossy().into_owned(),
+				| _ => {
+					eprintln!("usage: wheel add <NAME>");
+					return;
+				},
+			};
 
+			config.current_pool.push(name.clone());
 			config.update();
-
-			println!(
-				"added entry {} to wheel\n\nrun `wheel-picker list` to see all entries",
-				entry
-			);
+			println!("added entry {name} to wheel\n\nrun `wheel-picker list` to see all entries");
 		},
-		| Some(("remove", sub_matches)) => {
-			let entry = sub_matches.get_one::<String>("NAME").expect("required");
 
-			if !config.current_pool.is_empty() {
-				if let Some(pos) = config.current_pool.iter().position(|e| e == entry) {
-					config.current_pool.remove(pos);
-					config.update();
+		| "remove" => {
+			let name = match parser.next() {
+				| Ok(Some(Arg::Value(v))) => v.to_string_lossy().into_owned(),
+				| _ => {
+					eprintln!("usage: wheel remove <NAME>");
+					return;
+				},
+			};
 
-					println!(
-						"removed entry {} from wheel\n\nrun `wheel-picker list` to see all entries",
-						entry
-					);
-				} else {
-					println!("entry {} not found in wheel", entry);
-				}
-				return;
+			if let Some(pos) = config.current_pool.iter().position(|e| e == &name) {
+				config.current_pool.remove(pos);
+				config.update();
+				println!(
+					"removed entry {name} from wheel\n\nrun `wheel-picker list` to see all entries"
+				);
+			} else {
+				println!("entry {name} not found in wheel");
 			}
-			println!("wheel has no entries\n\ntry adding some with `wheel-picker add <entry>`");
 		},
-		| Some(("list", _)) => {
-			if !config.current_pool.is_empty() {
+
+		| "list" => {
+			if config.current_pool.is_empty() {
+				println!("wheel has no entries\n\ntry adding some with `wheel-picker add <entry>`");
+			} else {
 				println!("current wheel pool:\n{}", config.current_pool.join("\n"));
-				return;
 			}
-			println!("wheel has no entries\n\ntry adding some with `wheel-picker add <entry>`");
 		},
-		| Some(("clear", _)) => {
+
+		| "clear" => {
 			print!("Are you sure? (y/N): ");
 			io::stdout().flush().unwrap();
 
@@ -94,56 +73,64 @@ fn main() {
 
 			let input = input.trim().to_lowercase();
 			if input == "y" || input == "yes" {
-				config.current_pool = vec![];
+				config.current_pool.clear();
 				config.update();
-
 				println!("cleared wheel");
 			} else {
 				println!("cancelled operation");
 			}
 		},
-		| Some(("pick", sub_matches)) => {
-			let is_instant = sub_matches.get_one::<bool>("instant").unwrap_or(&false);
-			let amount = sub_matches.get_one::<usize>("AMOUNT").unwrap_or(&1);
 
-			if !config.current_pool.is_empty() {
-				if *is_instant {
-					let mut picked: Vec<&str> = vec![];
-					for _ in 0..*amount {
-						picked.push(fastrand::choice(&config.current_pool).unwrap());
-					}
+		| "pick" => {
+			let mut instant = false;
+			let mut amount: usize = 1;
 
-					println!("picked entries: {}", picked.join(", "));
+			while let Some(Ok(arg)) = parser.next().transpose() {
+				match arg {
+					| Arg::Long("instant") | Arg::Short('i') => instant = true,
 
-					return;
-				} else {
-					let mut picked: Vec<&str> = vec![];
-
-					for i in 0..*amount {
-						println!("\nSpin {}:", i + 1);
-
-						let spin_time = fastrand::usize(1..3);
-						let start = std::time::Instant::now();
-
-						let mut current = "";
-
-						while start.elapsed().as_secs_f32() < spin_time as f32 {
-							current = fastrand::choice(&config.current_pool).unwrap();
-							print!("\r\x1B[2KSpinning... [{}]", current);
-							std::io::Write::flush(&mut std::io::stdout()).unwrap();
-							thread::sleep(Duration::from_millis(fastrand::u64(50..150)));
-						}
-
-						picked.push(current);
-						println!("\r\x1B[2Kpicked: {}", current);
-					}
-
-					println!("\npicked entries: {}", picked.join(", "));
-					return;
+					| Arg::Value(v) => {
+						amount = v.to_string_lossy().parse().unwrap_or(1);
+					},
+					| _ => {},
 				}
 			}
-			println!("wheel has no entries\n\ntry adding some with `wheel-picker add <entry>`");
+
+			if config.current_pool.is_empty() {
+				println!("wheel has no entries\n\ntry adding some with `wheel-picker add <entry>`");
+				return;
+			}
+
+			if instant {
+				let mut picked: Vec<&str> = Vec::new();
+				for _ in 0..amount {
+					picked.push(fastrand::choice(&config.current_pool).unwrap());
+				}
+				println!("picked entries: {}", picked.join(", "));
+			} else {
+				let mut picked = Vec::new();
+				for i in 0..amount {
+					println!("\nSpin {}:", i + 1);
+
+					let spin_time = fastrand::usize(1..3);
+					let start = std::time::Instant::now();
+					let mut current = "";
+
+					while start.elapsed().as_secs_f32() < spin_time as f32 {
+						current = fastrand::choice(&config.current_pool).unwrap();
+						print!("\r\x1B[2KSpinning... [{}]", current);
+						io::stdout().flush().unwrap();
+						thread::sleep(Duration::from_millis(fastrand::u64(50..150)));
+					}
+
+					picked.push(current);
+					println!("\r\x1B[2Kpicked: {}", current);
+				}
+
+				println!("\npicked entries: {}", picked.join(", "));
+			}
 		},
-		| _ => unreachable!(),
+
+		| _ => eprintln!("unknown command {cmd}"),
 	}
 }
