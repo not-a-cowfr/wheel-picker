@@ -1,6 +1,7 @@
 [unstable]
 build-std = ["std", "panic_abort"]
 build-std-features = ["optimize_for_size"]
+codegen-backend = true
 
 [build]
 rustflags = ["-Zlocation-detail=none"]
