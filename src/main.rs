@@ -3,8 +3,6 @@ use std::thread;
 use std::time::Duration;
 
 use clap::{Command, arg};
-use rand::Rng;
-use rand::seq::IndexedRandom;
 
 use crate::config::Config;
 
@@ -109,12 +107,10 @@ fn main() {
 			let amount = sub_matches.get_one::<usize>("AMOUNT").unwrap_or(&1);
 
 			if !config.current_pool.is_empty() {
-				let mut rng = rand::rng();
-
 				if *is_instant {
 					let mut picked: Vec<&str> = vec![];
 					for _ in 0..*amount {
-						picked.push(config.current_pool.choose(&mut rng).unwrap());
+						picked.push(fastrand::choice(&config.current_pool).unwrap());
 					}
 
 					println!("picked entries: {}", picked.join(", "));
@@ -126,16 +122,16 @@ fn main() {
 					for i in 0..*amount {
 						println!("\nSpin {}:", i + 1);
 
-						let spin_time = rng.random_range(1..3);
+						let spin_time = fastrand::usize(1..3);
 						let start = std::time::Instant::now();
 
 						let mut current = "";
 
 						while start.elapsed().as_secs_f32() < spin_time as f32 {
-							current = config.current_pool.choose(&mut rng).unwrap();
+							current = fastrand::choice(&config.current_pool).unwrap();
 							print!("\r\x1B[2KSpinning... [{}]", current);
 							std::io::Write::flush(&mut std::io::stdout()).unwrap();
-							thread::sleep(Duration::from_millis(rng.random_range(50..150)));
+							thread::sleep(Duration::from_millis(fastrand::u64(50..150)));
 						}
 
 						picked.push(current);
