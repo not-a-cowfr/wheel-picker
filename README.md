@@ -16,6 +16,6 @@ from cargo
 cargo install wheel-picker
 ```
 
-from [github releases]
+from [github releases] (smallest binary sizes)
 
 [github releases]: https://github.com/not-a-cowfr/wheel-picker/releases/latest
