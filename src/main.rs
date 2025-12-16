@@ -48,15 +48,7 @@ fn main() {
 				},
 			};
 
-			if let Some(pos) = config.current_pool.iter().position(|e| e == &name) {
-				config.current_pool.remove(pos);
-				config.update();
-				println!(
-					"removed entry {name} from wheel\n\nrun `wheel-picker list` to see all entries"
-				);
-			} else {
-				println!("entry {name} not found in wheel");
-			}
+			remove_user(config.clone(), &name);
 		},
 
 		| "list" => {
@@ -86,15 +78,14 @@ fn main() {
 
 		| "pick" => {
 			let mut instant = false;
+			let mut remove_after_pick = false;
 			let mut amount: usize = 1;
 
 			while let Some(Ok(arg)) = parser.next().transpose() {
 				match arg {
 					| Arg::Long("instant") | Arg::Short('i') => instant = true,
-
-					| Arg::Value(v) => {
-						amount = v.to_string_lossy().parse().unwrap_or(1);
-					},
+					| Arg::Long("remove") | Arg::Short('r') => remove_after_pick = true,
+					| Arg::Value(v) => amount = v.to_string_lossy().parse().unwrap_or(1),
 					| _ => {},
 				}
 			}
@@ -107,7 +98,12 @@ fn main() {
 			if instant {
 				let mut picked: Vec<&str> = Vec::new();
 				for _ in 0..amount {
-					picked.push(fastrand::choice(&config.current_pool).unwrap());
+					let new_pick = fastrand::choice(&config.current_pool).unwrap();
+
+					picked.push(&new_pick);
+					if remove_after_pick {
+						remove_user(config.clone(), &new_pick)
+					}
 				}
 				println!("picked entries: {}", picked.join(", "));
 			} else {
@@ -127,6 +123,10 @@ fn main() {
 					}
 
 					picked.push(current);
+					if remove_after_pick {
+						remove_user(config.clone(), &current.to_string())
+					}
+
 					println!("\r\x1B[2Kpicked: {}", current);
 				}
 
@@ -135,5 +135,18 @@ fn main() {
 		},
 
 		| _ => eprintln!("unknown command {cmd}"),
+	}
+}
+
+fn remove_user(
+	mut config: Config,
+	name: &String,
+) {
+	if let Some(pos) = config.current_pool.iter().position(|e| e == name) {
+		config.current_pool.remove(pos);
+		config.update();
+		println!("removed entry {name} from wheel\n\nrun `wheel-picker list` to see all entries");
+	} else {
+		println!("entry {name} not found in wheel");
 	}
 }

@@ -38,7 +38,7 @@ fn get_config_dir() -> PathBuf {
 	home_dir.join(CONFIG_DIR)
 }
 
-#[derive(Debug, Default, DeRon, SerRon)]
+#[derive(Debug, Default, DeRon, SerRon, Clone)]
 pub struct Config {
 	#[nserde(default)]
 	pub current_pool: Vec<String>,
