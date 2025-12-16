@@ -58,12 +58,7 @@ jobs:
           echo "C:\UPX" | Out-File -Append -FilePath $env:GITHUB_PATH
 
       - name: Build
-        uses: houseabsolute/actions-rust-cross@v0
-        with:
-          target: ${{ matrix.platform.target }}
-          toolchain: nightly
-          command: release
-          args: --locked
+        run: cargo release --locked
 
       - name: Package (linux)
         if: matrix.platform.os == 'ubuntu-latest'
@@ -149,14 +144,15 @@ jobs:
       - uses: dtolnay/rust-toolchain@nightly
 
       - name: Check if version already exists on crates.io
+        id: check
         run: |
           crate_name=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].name')
           version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
-          echo "Checking if $crate_name v$version exists on crates.io..."
-          if cargo search "^$crate_name$" --limit 1 | grep -q "$version"; then
-            echo "exists=false" >> $GITHUB_OUTPUT
-          else
+          cratesio_version=$(curl -s "https://crates.io/api/v1/crates/$crate_name" | jq -r '.crate.max_version')
+          if [[ $version == $cratesio_version ]]; then
             echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Publish to crates.io
