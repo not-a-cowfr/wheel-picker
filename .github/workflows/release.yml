@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   build:
-    name: build ${{ matrix.platform.name }}
+    name: build wheel-picker-${{ matrix.platform.name }}
     if: startsWith(github.event.head_commit.message, 'v')
     runs-on: ${{ matrix.platform.os }}
     strategy:
@@ -70,35 +70,35 @@ jobs:
         run: |
           mkdir -p dist
           bin_name="wheel-picker"
-          cp target/${{ matrix.platform.target }}/release/${bin_name} dist/
+          cp target/release/${bin_name} dist/
           cd dist
 
           upx --best --lzma ${bin_name}
-          zip ../${{ matrix.platform.name }}.zip ${bin_name}
+          zip ../wheel-picker-${{ matrix.platform.name }}.zip ${bin_name}
 
       - name: Package (macos)
         if: matrix.platform.os == 'macos-latest'
         run: |
           mkdir -p dist
           bin_name="wheel-picker"
-          cp target/${{ matrix.platform.target }}/release/${bin_name} dist/
+          cp target/release/${bin_name} dist/
           cd dist
 
-          zip ../${{ matrix.platform.name }}.zip ${bin_name}
+          zip ../wheel-picker-${{ matrix.platform.name }}.zip ${bin_name}
 
       - name: Package (windows)
         if: matrix.platform.os == 'windows-latest'
         run: |
           mkdir dist
           $bin_name = "wheel-picker.exe"
-          Copy-Item "target/${{ matrix.platform.target }}/release/$bin_name" dist/
-          Compress-Archive -Path "dist/$bin_name" -DestinationPath "${{ matrix.platform.name }}.zip"
+          Copy-Item "target/release/$bin_name" dist/
+          Compress-Archive -Path "dist/$bin_name" -DestinationPath "wheel-picker-${{ matrix.platform.name }}.zip"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.platform.name }}
-          path: ${{ matrix.platform.name }}.zip
+          name: wheel-picker-${{ matrix.platform.name }}
+          path: wheel-picker-${{ matrix.platform.name }}.zip
 
   release:
     if: startsWith(github.event.head_commit.message, 'v')
