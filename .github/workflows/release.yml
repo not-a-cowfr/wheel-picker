@@ -62,8 +62,8 @@ jobs:
         with:
           target: ${{ matrix.platform.target }}
           toolchain: nightly
-          command: build
-          args: --locked --release
+          command: release
+          args: --locked
 
       - name: Package (linux)
         if: matrix.platform.os == 'ubuntu-latest'
