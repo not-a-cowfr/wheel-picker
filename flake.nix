@@ -23,6 +23,9 @@
       {
         devShells.default = mkShell {
           packages = [
+            just
+            upx
+
             # required for rust-analyzer
             openssl
             pkg-config
